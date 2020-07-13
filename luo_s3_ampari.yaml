@@ -5,7 +5,14 @@ Resources:
   Ampari:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: mikon-cloudformation-ampari
-
-
-#validate template
+      BucketName: mikon-cloudformation-malliampari
+      Tags:
+        - Key: Owner
+          Value: Mikko
+  SQSservice:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: mikko-sqs
+      Tags:
+        - Key: Owner
+          Value: Mikko
