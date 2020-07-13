@@ -41,3 +41,25 @@ Resources:
         - Key: Owner
           Value: Mikko
 
+  ALBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      Name: HuugiBuugiBalancer
+      Scheme: internet-facing
+      Subnets:
+        - subnet-f9a8b3c7
+        - subnet-b693f4fb
+        - subnet-94bf68f2
+      Tags:
+        - Key: Owner
+          Value: Mikko
+      Type: application
+
+Outputs:
+  BackupLoadBalancerDNSName:
+    Description: The DNSName of the backup load balancer
+    Value: !GetAtt ALBalancer.DNSName
+
+
+#aws cloudformation deploy --template-file luo_s3_ampari.yaml --stack-name mikon-s3-stack
