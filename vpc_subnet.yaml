@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Mikon CloudFormation VPC-subnets
+
+Parameters:
+
+  VPCCIDR:
+    Type: String
+    Default: 10.0.0.0/16
+
+  PublicSubnet1CIDR:
+    Type: String
+    Default: 10.0.0.0/24
+
+  PrivateSubnet1CIDR:
+    Type: String
+    Default: 10.0.1.0/24
+
+  PrivateSubnet2CIDR:
+    Type: String
+    Default: 10.0.2.0/24
+
+Resources:
+
+#Virtual Private Cloud
+  MikkoCFVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      Tags:
+        - Key: Name
+          Value: MikkoCLVPC
+        - Key: Owner
+          Value: Mikko
+
+#Subnet Public
+  MikkoPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-central-1a
+      CidrBlock: !Ref PublicSubnet1CIDR
+      Tags:
+        - Key: Name
+          Value: MikkoPublicSn1
+        - Key: Owner
+          Value: Mikko
+      VpcId: !Ref MikkoCFVPC
+
+#Subnet Private1
+  MikkoPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-central-1a
+      CidrBlock: !Ref PrivateSubnet1CIDR
+      Tags:
+        - Key: Name
+          Value: MikkoPrivateSn1
+        - Key: Owner
+          Value: Mikko
+      VpcId: !Ref MikkoCFVPC
+
+#Subnet Private2
+  MikkoPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-central-1b
+      CidrBlock: !Ref PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: MikkoPrivateSn2
+        - Key: Owner
+          Value: Mikko
+      VpcId: !Ref MikkoCFVPC
+
+#Internet Gateway
+  InternetGatewaySNPublic:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: mikko-ig
+        - Key: Owner
+          Value: Mikko
+#Connect IG (above) to VPC
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGatewaySNPublic
+      VpcId: !Ref MikkoCFVPC
+
