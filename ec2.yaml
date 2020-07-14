@@ -23,5 +23,5 @@ Resources:
         - Key: Name
           Value: mikko-ec2-cf
       KeyName: mikon-demo-ec2
-      SecurityGroupIds:
-          - Ref: InstanceSecurityGroup
+      #SecurityGroupIds:
+      #    - Ref: InstanceSecurityGroup

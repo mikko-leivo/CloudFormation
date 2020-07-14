@@ -1,0 +1,5 @@
+#aws cloudformation deploy --template-file (FILE) --stack-name (Nimeä stäkki) --region (Region jos ei default)
+#aws cloudformation update-stack --template-body (FILE) --stack-name (Nimeä stäkki) --region (Region jos ei default)
+#aws cloudformation continue-update-rollback
+
+#
