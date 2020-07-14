@@ -1,6 +1,11 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Mikon CloudFormation Demo
 
+# Parameters: Latest Ami Id, Instance Type Parameter, myVPC
+# Resouces: EC2mikko, InstanceSecurityGroup, S3 ampari, SQSservice, ALBalancer, ALB security group,
+# Outputs: BackupLoadBalancerDNSName
+
+
 Parameters:
   LatestAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
@@ -10,6 +15,9 @@ Parameters:
     Default: t2.micro
     AllowedValues:
       - t2.micro
+  myVPC:
+    Type: String
+    Default: vpc-bc8f6cc1
 
 Resources:
 
@@ -24,6 +32,27 @@ Resources:
         - Key: Name
           Value: HuugiBuugi
       KeyName: mikon-demo-ec2
+      SecurityGroupIds:
+        - Type: String
+          Ref: InstanceSecurityGroup
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: mikko-CF-sg
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: myVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
 
   Ampari:
     Type: AWS::S3::Bucket
@@ -55,6 +84,25 @@ Resources:
         - Key: Owner
           Value: Mikko
       Type: application
+
+  ALBsg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SecurityGroup_for_ALB
+      GroupName: mikko-alb-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: ssh
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Owner
+          Value: Mikko
+      VpcId: !Ref myVPC
 
 Outputs:
   BackupLoadBalancerDNSName:
