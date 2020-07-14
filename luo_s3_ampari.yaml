@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: Mikon CloudFormation Demo
 
 # Parameters: Latest Ami Id, Instance Type Parameter, myVPC
-# Resouces: EC2mikko, InstanceSecurityGroup, S3 ampari, SQSservice, ALBalancer, ALB security group,
+# Resouces: AutoScalingGroup, InstanceSecurityGroup, S3 ampari, SQSservice, ALBalancer, ALB security group, ALBTargetGroup
 # Outputs: BackupLoadBalancerDNSName
 
 
@@ -21,25 +21,42 @@ Parameters:
 
 Resources:
 
-  EC2mikko:
-    Type: "AWS::EC2::Instance"
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      InstanceType: !Ref InstanceTypeParameter
+      AutoScalingGroupName: mikko-asg-cf
+      VPCZoneIdentifier:
+        - subnet-f9a8b3c7
+        - subnet-b693f4fb
+        - subnet-94bf68f2
+      LaunchConfigurationName: !Ref LaunchCinfigMikko
+      MaxSize: 3
+      MinSize: 1
+      DesiredCapacity: 2
+      TargetGroupARNs:
+        - !Ref ALBTargetGroup
+
+  LaunchCinfigMikko:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
       ImageId: !Ref LatestAmiId
-      Tags:
-        - Key: Owner
-          Value: Mikko
-        - Key: Name
-          Value: HuugiBuugi
+      InstanceType: !Ref InstanceTypeParameter
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
       KeyName: mikon-demo-ec2
-      SecurityGroupIds:
-        - Type: String
-          Ref: InstanceSecurityGroup
+      UserData:
+        Fn::Base64:
+          Fn::Join:
+            - "\n"
+            - - "#!/bin/bash"
+              - "amazon-linux-extras install epel"
+              - "amazon-linux-extras install nginx1"
+              - "systemctl start nginx"
 
   InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: mikko-CF-sg
+      GroupName: mikko-ec2-sg-cl
       GroupDescription: Allow http to client host
       VpcId:
         Ref: myVPC
@@ -47,17 +64,17 @@ Resources:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
+          SourceSecurityGroupId: !Ref ALBsg
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: 22
+          ToPort: 22
           CidrIp: 0.0.0.0/0
+
 
   Ampari:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: mikon-cloudformation-malliampari
+      BucketName: mikko-s3-cf
       Tags:
         - Key: Owner
           Value: Mikko
@@ -65,7 +82,7 @@ Resources:
   SQSservice:
     Type: 'AWS::SQS::Queue'
     Properties:
-      QueueName: mikko-sqs
+      QueueName: mikko-sqs-cf
       Tags:
         - Key: Owner
           Value: Mikko
@@ -74,7 +91,9 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       IpAddressType: ipv4
-      Name: HuugiBuugiBalancer
+      SecurityGroups:
+        - !Ref ALBsg
+      Name: mikko-alb-cf
       Scheme: internet-facing
       Subnets:
         - subnet-f9a8b3c7
@@ -85,24 +104,44 @@ Resources:
           Value: Mikko
       Type: application
 
+
   ALBsg:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: SecurityGroup_for_ALB
-      GroupName: mikko-alb-sg
+      GroupName: mikko-alb-sg-cf
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-        - IpProtocol: ssh
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Owner
           Value: Mikko
       VpcId: !Ref myVPC
+
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: mikko-alb-targetgroup-cf
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      VpcId: !Ref myVPC
+      Tags:
+        - Key: Owner
+          Value: Mikko
+
+  ALBlistener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref ALBalancer
+      Port: 80
+      Protocol: HTTP
+
 
 Outputs:
   BackupLoadBalancerDNSName:
