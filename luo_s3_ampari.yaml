@@ -8,16 +8,25 @@ Description: Mikon CloudFormation Demo
 
 Parameters:
   LatestAmiId:
-    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
   InstanceTypeParameter:
     Type: String
     Default: t2.micro
     AllowedValues:
       - t2.micro
-  myVPC:
-    Type: String
-    Default: vpc-bc8f6cc1
+#  myVPC:
+#    Type: String
+#    Default: !GetAtt myVpcSubnetStack.Outputs.MikkoCFVPC
+#  myPublicSubnet1:
+#    Type: String
+#    Default: !GetAtt myVpcSubnetStack.Outputs.PubSub1
+#  myPrivateSubnet1:
+#    Type: String
+#    Default: !GetAtt myVpcSubnetStack.Outputs.PrivateSub1
+#  myPrivateSubnet2:
+#    Type: String
+#    Default: !GetAtt myVpcSubnetStack.Outputs.PrivateSub2
 
 Resources:
 
@@ -26,15 +35,17 @@ Resources:
     Properties:
       AutoScalingGroupName: mikko-asg-cf
       VPCZoneIdentifier:
-        - subnet-f9a8b3c7
-        - subnet-b693f4fb
-        - subnet-94bf68f2
+        - !GetAtt myVpcSubnetStack.Outputs.PubSub1
+        - !GetAtt myVpcSubnetStack.Outputs.PrivateSub1
+        - !GetAtt myVpcSubnetStack.Outputs.PrivateSub2
       LaunchConfigurationName: !Ref LaunchCinfigMikko
       MaxSize: 3
       MinSize: 1
       DesiredCapacity: 2
       TargetGroupARNs:
         - !Ref ALBTargetGroup
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 15
 
   LaunchCinfigMikko:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -43,7 +54,7 @@ Resources:
       InstanceType: !Ref InstanceTypeParameter
       SecurityGroups:
         - !Ref InstanceSecurityGroup
-      KeyName: mikon-demo-ec2
+      KeyName: mikko-kp-frankfurt
       UserData:
         Fn::Base64:
           Fn::Join:
@@ -58,8 +69,7 @@ Resources:
     Properties:
       GroupName: mikko-ec2-sg-cl
       GroupDescription: Allow http to client host
-      VpcId:
-        Ref: myVPC
+      VpcId: !GetAtt myVpcSubnetStack.Outputs.StackVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
@@ -96,9 +106,8 @@ Resources:
       Name: mikko-alb-cf
       Scheme: internet-facing
       Subnets:
-        - subnet-f9a8b3c7
-        - subnet-b693f4fb
-        - subnet-94bf68f2
+        - !GetAtt myVpcSubnetStack.Outputs.PubSub1
+        - !GetAtt myVpcSubnetStack.Outputs.PrivateSub2
       Tags:
         - Key: Owner
           Value: Mikko
@@ -118,7 +127,7 @@ Resources:
       Tags:
         - Key: Owner
           Value: Mikko
-      VpcId: !Ref myVPC
+      VpcId: !GetAtt myVpcSubnetStack.Outputs.StackVPC
 
   ALBTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -127,7 +136,7 @@ Resources:
       Port: 80
       Protocol: HTTP
       TargetType: instance
-      VpcId: !Ref myVPC
+      VpcId: !GetAtt myVpcSubnetStack.Outputs.StackVPC
       Tags:
         - Key: Owner
           Value: Mikko
@@ -142,6 +151,10 @@ Resources:
       Port: 80
       Protocol: HTTP
 
+  myVpcSubnetStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: https://mikko-cron.s3.eu-west-2.amazonaws.com/vpc_subnet.yaml
 
 Outputs:
   BackupLoadBalancerDNSName:

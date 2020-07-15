@@ -44,6 +44,7 @@ Resources:
         - Key: Owner
           Value: Mikko
       VpcId: !Ref MikkoCFVPC
+      MapPublicIpOnLaunch: True
 
 #Subnet Private1
   MikkoPrivateSubnet1:
@@ -187,3 +188,19 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGWforPublicSN1
 
+Outputs:
+  StackVPC:
+    Description: The ID of the VPC
+    Value: !Ref MikkoCFVPC
+
+  PubSub1:
+    Description: The ID of the public subnet 1
+    Value: !Ref MikkoPublicSubnet1
+
+  PrivateSub1:
+    Description: The ID of the public subnet 1
+    Value: !Ref MikkoPrivateSubnet1
+
+  PrivateSub2:
+    Description: The ID of the private subnet 2
+    Value: !Ref MikkoPrivateSubnet2
