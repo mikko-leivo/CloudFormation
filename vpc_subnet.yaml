@@ -87,3 +87,103 @@ Resources:
       InternetGatewayId: !Ref InternetGatewaySNPublic
       VpcId: !Ref MikkoCFVPC
 
+#Elastic IP
+  EIPforNAT:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Owner
+          Value: Mikko
+
+#Nat Gateway for Public Subnet 1
+  NATGWforPublicSN1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt EIPforNAT.AllocationId
+      SubnetId: !Ref MikkoPrivateSubnet1
+      Tags:
+        - Key: Owner
+          Value: Mikko
+
+#Route table for Private Subnet 1
+  RouteTablePrivate1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Owner
+          Value: Mikko
+        - Key: Name
+          Value: mikko-rt-private1
+      VpcId: !Ref MikkoCFVPC
+#RouteTable Private 1 association
+  RtPrivate1Associantion:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: MikkoPrivateSubnet1
+      RouteTableId:
+        Ref: RouteTablePrivate1
+
+#Route table for Private Subnet 2
+  RouteTablePrivate2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Owner
+          Value: Mikko
+        - Key: Name
+          Value: mikko-rt-private2
+      VpcId: !Ref MikkoCFVPC
+#RouteTable Private 2 association
+  RtPrivate2Associantion:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: MikkoPrivateSubnet2
+      RouteTableId:
+        Ref: RouteTablePrivate2
+
+#Route table for Public Subnet 1
+  RouteTablePublic1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Owner
+          Value: Mikko
+        - Key: Name
+          Value: mikko-rt-private1
+      VpcId: !Ref MikkoCFVPC
+#RouteTable Public 1 association
+  RtPublic1Associantion:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId:
+        Ref: MikkoPublicSubnet1
+      RouteTableId:
+        Ref: RouteTablePublic1
+
+#Routes from Public Subnet
+  RoutesFromPublicSubnet1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePublic1
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewaySNPublic
+
+#Route from Private1 subnet
+  RoutesFromPrivateSubnet1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWforPublicSN1
+
+#Route from Private2 subnet
+  RoutesFromPrivateSubnet2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref RouteTablePrivate2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGWforPublicSN1
+
